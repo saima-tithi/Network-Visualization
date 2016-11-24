@@ -6,6 +6,7 @@ var width = 960,     // svg width
 	border = 1,
 	bordercolor = 'black',
 	expand = {}, // expanded clusters
+	n = 100,	// number of times force runs, then it stops to get static layout
 	data, net, force, hullg, hull, linkg, link, nodeg, node;
 
 var curve = d3.svg.line()
@@ -235,7 +236,7 @@ function init() {
 		.linkStrength(function(l, i) {
 			return 1;
 		})
-		.gravity(0.05)   // gravity+charge tweaked to ensure good 'grouped' view (e.g. green group not smack between blue&orange, ...
+		.gravity(0.4)   // gravity+charge tweaked to ensure good 'grouped' view (e.g. green group not smack between blue&orange, ...
 		.charge(-600)    // ... charge is important to turn single-linked groups to the outside
 		.friction(0.8)   // friction adjusted to get dampened display: less bouncy bouncy ball [Swedish Chef, anyone?]
 		.on("tick", ticked)
@@ -254,17 +255,6 @@ function init() {
 			init();
 		});
 
-	link = linkg.selectAll("line.link").data(net.links, linkid);
-	link.exit().remove();
-	link.enter().append("line")
-		.attr("class", "link")
-		.attr("x1", function(d) { return d.source.x; })
-		.attr("y1", function(d) { return d.source.y; })
-		.attr("x2", function(d) { return d.target.x; })
-		.attr("y2", function(d) { return d.target.y; })
-		.style("stroke-width", function(d) { return d.size * 0.25 || 1; });
-		//.style("stroke-width", function(d) { return 1; });
-
 	node = nodeg.selectAll("circle.node").data(net.nodes, nodeid);
 	node.exit().remove();
 	node.enter().append("circle")
@@ -280,6 +270,17 @@ function init() {
 			expand[d.group] = !expand[d.group];
 			init();
 		});
+		
+	link = linkg.selectAll("line.link").data(net.links, linkid);
+	link.exit().remove();
+	link.enter().append("line")
+		.attr("class", "link")
+		.attr("x1", function(d) { return d.source.x; })
+		.attr("y1", function(d) { return d.source.y; })
+		.attr("x2", function(d) { return d.target.x; })
+		.attr("y2", function(d) { return d.target.y; })
+		.style("stroke-width", function(d) { return d.size * 0.25 || 1; });
+		//.style("stroke-width", function(d) { return 1; });
 
 	node.append("title")
 		.text(function(d) { return nodeid(d) });
@@ -296,8 +297,101 @@ function init() {
 			.attr("y1", function(d) { return d.source.y; })
 			.attr("x2", function(d) { return d.target.x; })
 			.attr("y2", function(d) { return d.target.y; });
-
+		//console.log("in tick", link);
 		node.attr("cx", function(d) { return d.x = Math.max(radius, Math.min(width - radius, d.x)); })
 			.attr("cy", function(d) { return d.y = Math.max(radius, Math.min(height - radius, d.y)); });
 	}
+	
+	/* force.start();
+	for (var i = 0; i < n*n; ++i) force.tick();
+	force.stop();  */
+}
+
+//slider code
+var margin = {
+    top: 25,
+    right: 30,
+    bottom: 25,
+    left: 30
+};
+var widthSlidr = 900;
+var heightSlidr = 50;
+formatDate = d3.time.format("%b %d");
+// initial value
+var startValue = new Date('2012-01-02');
+var endValue = new Date('2013-01-01');
+// scale function
+var timeScale = d3.time.scale()
+	.domain([startValue, endValue])
+	.range([0, widthSlidr])
+	.clamp(true);
+
+// defines brush
+var brush = d3.svg.brush()
+	.x(timeScale)
+	.extent([startValue, startValue])
+	.on("brush", slideEvent);
+
+var sliderContainer = d3.select("#slider").append("svg")
+	.attr("width", widthSlidr + margin.left + margin.right)
+	.attr("height", heightSlidr + margin.top + margin.bottom)
+	.append("g")
+	// classic transform to position g
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+sliderContainer.append("g")
+	.attr("class", "x axis")
+	// put in middle of screen
+	.attr("transform", "translate(0," + heightSlidr / 2 + ")")
+	// inroduce axis
+	.call(d3.svg.axis()
+	.scale(timeScale)
+	.orient("bottom")
+	.tickFormat(function(d) {
+		return formatDate(d);
+	})
+	.tickSize(0)
+	.tickPadding(12)
+	.tickValues([timeScale.domain()[0], timeScale.domain()[1]]))
+	.select(".domain")
+	.select(function() {
+		console.log(this);
+		return this.parentNode.appendChild(this.cloneNode(true));
+	})
+	.attr("class", "halo");
+
+var slider = sliderContainer.append("g")
+	.attr("class", "slider")
+	.call(brush);
+
+slider.selectAll(".extent,.resize")
+	.remove();
+
+slider.select(".background")
+	.attr("height", height);
+
+var handle = slider.append("g")
+	.attr("class", "handle")
+
+handle.append("path")
+	.attr("transform", "translate(0," + heightSlidr / 2 + ")")
+	.attr("d", "M 0 -20 V 20")
+
+handle.append('text')
+	.text(startValue)
+	.attr("transform", "translate(" + (-18) + " ," + (heightSlidr / 2 - 25) + ")");
+
+slider
+	.call(brush.event)
+
+function slideEvent() {
+	var value = brush.extent()[0];
+
+	if (d3.event.sourceEvent) { // not a programmatic event
+		value = timeScale.invert(d3.mouse(this)[0]);
+		brush.extent([value, value]);
+	}
+
+	handle.attr("transform", "translate(" + timeScale(value) + ",0)");
+	handle.select('text').text(formatDate(value));
 }
