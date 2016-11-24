@@ -1,3 +1,24 @@
+#force-layout-graph {
+	display: inline-block;
+	float:left;
+}
+#dropdown {
+	display: inline-block;
+	float:left;
+	width: 300px;
+	height: 500px;
+	background-color: #cfd9e6;
+}
+input[type=text], select {
+    width: 98%;
+    padding: 12px 20px;
+    margin-top: 8px;
+	margin-left: 3px;
+    display: inline-block;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
 circle.node {
   fill: lightsteelblue;
   stroke-width: 3px;

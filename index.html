@@ -9,7 +9,15 @@
 <body>
 <!--  Comment -->
 	<h1>DNetViz (Dynamic Network Visualization)</h1>
-	<div id="force-layout-graph"></div>
+	<div id=wrapper>
+		<div id="force-layout-graph"></div>
+		<div id="dropdown">
+			<select onchange="loadData()" id="dataset">
+				<option value="workplace_small" selected="selected">Data set 1</option>
+				<option value="school">Data set 2</option>
+			</select>
+		</div>
+	</div>
 	<div id="slider"></div>
 	<script src="https://d3js.org/d3.v3.min.js"></script>
 	<script src="net-viz.js"></script>

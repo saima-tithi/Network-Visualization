@@ -171,38 +171,44 @@ var borderPath = forceGraph.append("rect")
 	.style("fill", "none")
 	.style("stroke-width", border);	
 
-d3.json("data/workplace_small.json", function(error, json) {
-	if (error) throw error;
-	data = json;
-	for (var i=0; i<data.links.length; ++i) {
-		o = data.links[i];
-		var sourceNode, targetNode;
-		for (var k = 0; k < data.nodes.length; ++k) {
-			var node = data.nodes[k];
-			if (o.source === node.name) {
-				sourceNode = node;
-				continue;
+//function loadData() {
+	//var e = document.getElementById('dataset');
+	//var dataset = e.options[e.selectedIndex].value;
+	//var dataFile = 'data/' + dataset + '.json';
+	//console.log("in loadData", dataFile);
+	d3.json('data/workplace_small.json', function(error, json) {
+		if (error) throw error;
+		data = json;
+		for (var i=0; i<data.links.length; ++i) {
+			o = data.links[i];
+			var sourceNode, targetNode;
+			for (var k = 0; k < data.nodes.length; ++k) {
+				var node = data.nodes[k];
+				if (o.source === node.name) {
+					sourceNode = node;
+					continue;
+				}
+				if (o.target === node.name) {
+					targetNode = node;
+					continue;
+				}
 			}
-			if (o.target === node.name) {
-				targetNode = node;
-				continue;
-			}
+			o.source = sourceNode;
+			o.target = targetNode;
 		}
-		o.source = sourceNode;
-		o.target = targetNode;
-	}
 
-	hullg = forceGraph.append("g");
-	linkg = forceGraph.append("g");
-	nodeg = forceGraph.append("g");
+		hullg = forceGraph.append("g");
+		linkg = forceGraph.append("g");
+		nodeg = forceGraph.append("g");
 
-	init();
+		init();
 
-	forceGraph.attr("opacity", 1e-6)
-		.transition()
-		.duration(1000)
-		.attr("opacity", 1);
-});
+		forceGraph.attr("opacity", 1e-6)
+			.transition()
+			.duration(1000)
+			.attr("opacity", 1);
+	});
+//}
 
 function init() {
 	if (force) force.stop();
@@ -302,11 +308,13 @@ function init() {
 			.attr("cy", function(d) { return d.y = Math.max(radius, Math.min(height - radius, d.y)); });
 	}
 	
+	//code for static graph, not working
 	/* force.start();
 	for (var i = 0; i < n*n; ++i) force.tick();
 	force.stop();  */
 }
 
+// -------------------------------------------------------------------------------------
 //slider code
 var margin = {
     top: 25,
@@ -395,3 +403,7 @@ function slideEvent() {
 	handle.attr("transform", "translate(" + timeScale(value) + ",0)");
 	handle.select('text').text(formatDate(value));
 }
+
+// ---------------------
+//code for selecting data set from dropdown menu
+//loadData();
