@@ -3,7 +3,17 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <title>DNetViz</title>    
-	<link rel="stylesheet" href="net-viz.css">
+	<link rel="stylesheet" href="net-viz.css"/>
+      <link rel="stylesheet" href="d3.slider.css" /> 
+      
+       <style>
+      .wrapper {
+      width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+     </style>
 </head>
 
 <body>
@@ -12,14 +22,37 @@
 	<div id=wrapper>
 		<div id="force-layout-graph"></div>
 		<div id="dropdown">
-			<select onchange="loadData()" id="dataset">
-				<option value="workplace_small" selected="selected">Data set 1</option>
-				<option value="school">Data set 2</option>
+			<select id="dataset">
+				<option value="data/workplace_small.json" selected="selected">Data set 1</option>
+				<option value="data/school.json">Data set 2</option>
 			</select>
 		</div>
 	</div>
-	<div id="slider"></div>
+    
+	<div id="slider">
 	<script src="https://d3js.org/d3.v3.min.js"></script>
-	<script src="net-viz.js"></script>
+
+
+    
+
+    
+    <svg></svg>
+    <div class="wrapper">
+
+
+
+
+    <h2>Range Slider with event, values: <span id="slider3textmin"></span>, <span id="slider3textmax"></span></h2>
+    
+    
+    
+    <div id="slider3"></div>
+
+ 	    <script src="d3.slider.js"></script>
+    <script src="net-viz.js"></script>
+  </div>
+</div>
+
+  
 </body>
 </html>

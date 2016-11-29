@@ -8,12 +8,18 @@ var width = 960,     // svg width
 	expand = {}, // expanded clusters
 	n = 100,	// number of times force runs, then it stops to get static layout
 	data, net, force, hullg, hull, linkg, link, nodeg, node;
+    time1 = 1, time2 = 10;
 
 var curve = d3.svg.line()
 	.interpolate("cardinal-closed")
 	.tension(.85);
 
 var fill = d3.scale.category20();
+
+// constants
+
+
+
 
 function noop() { return false; }
 
@@ -42,7 +48,7 @@ function getGroup(n) {
 }
 
 // constructs the network to visualize
-function network(data, prev, expand) {
+function network(data, prev, expand, time1, time2) {
 	expand = expand || {};
 	var gm = {},    // group map
 	nm = {},    // node map
@@ -106,6 +112,7 @@ function network(data, prev, expand) {
 	// determine links
 	for (k=0; k<data.links.length; ++k) {
 		var e = data.links[k];
+        if(e.time >= time1 && e.time <= time2){
 		var u = getGroup(e.source);
 		var v = getGroup(e.target);
 		if (u != v) {
@@ -117,6 +124,7 @@ function network(data, prev, expand) {
 		var i = (u<v ? u+"|"+v : v+"|"+u),
 		l = lm[i] || (lm[i] = {source:u, target:v, size:0});
 		l.size += 1;
+        }
 	}
 	
 	for (i in lm) { links.push(lm[i]); }
@@ -171,49 +179,75 @@ var borderPath = forceGraph.append("rect")
 	.style("fill", "none")
 	.style("stroke-width", border);	
 
-//function loadData() {
+function loadData(fileName) {
 	//var e = document.getElementById('dataset');
 	//var dataset = e.options[e.selectedIndex].value;
 	//var dataFile = 'data/' + dataset + '.json';
 	//console.log("in loadData", dataFile);
-	d3.json('data/workplace_small.json', function(error, json) {
+    maxtime = 0
+	d3.json(fileName, function(error, json) {
 		if (error) throw error;
 		data = json;
+        
 		for (var i=0; i<data.links.length; ++i) {
-			o = data.links[i];
-			var sourceNode, targetNode;
-			for (var k = 0; k < data.nodes.length; ++k) {
-				var node = data.nodes[k];
-				if (o.source === node.name) {
-					sourceNode = node;
-					continue;
-				}
-				if (o.target === node.name) {
-					targetNode = node;
-					continue;
-				}
-			}
-			o.source = sourceNode;
-			o.target = targetNode;
+			if(parseInt(data.links[i].time) >= maxtime) {
+            maxtime = data.links[i].time; 
+            }else{
+            console.log(data.links[i].time, maxtime)
+            }
+            
+                o = data.links[i];
+            
+                var sourceNode, targetNode;
+                for (var k = 0; k < data.nodes.length; ++k) {
+                    var node = data.nodes[k];
+                    if (o.source === node.name) {
+                        sourceNode = node;
+                        continue;
+                    }   
+                    if (o.target === node.name) {
+                        targetNode = node;
+                        continue;
+                    }
+                }
+                o.source = sourceNode;
+                o.target = targetNode;
+                
+            //}
 		}
-
+        
+        console.log(data.links)
 		hullg = forceGraph.append("g");
 		linkg = forceGraph.append("g");
 		nodeg = forceGraph.append("g");
-
-		init();
-
+        
+        d3.select('#slider3').call(d3.slider().axis(true).min(1).max(maxtime).value( [ 1, maxtime ] ).on("slide", function(evt, value) {
+            d3.select('#slider3textmin').text(value[ 0 ]);
+            d3.select('#slider3textmax').text(value[ 1 ]);
+            init(value[ 0 ] ,value[ 1 ]);
+            console.log(value[0], value[1])
+            
+    }));
+        d3.select('#slider3textmin').node().innerHTML =  1;
+        d3.select('#slider3textmax').node().innerHTML =  maxtime;
+     
+		init(1, maxtime);
+        console.log(maxtime)
 		forceGraph.attr("opacity", 1e-6)
 			.transition()
 			.duration(1000)
 			.attr("opacity", 1);
 	});
-//}
+}
 
-function init() {
+loadData('data/workplace_small.json');
+
+function init(time1, time2) {
+
+    
 	if (force) force.stop();
-
-	net = network(data, net, expand);
+    
+	net = network(data, net, expand,parseInt(time1), parseInt(time2));
 
 	force = d3.layout.force()
 		.nodes(net.nodes)
@@ -242,8 +276,8 @@ function init() {
 		.linkStrength(function(l, i) {
 			return 1;
 		})
-		.gravity(0.4)   // gravity+charge tweaked to ensure good 'grouped' view (e.g. green group not smack between blue&orange, ...
-		.charge(-600)    // ... charge is important to turn single-linked groups to the outside
+		.gravity(1.0)   // gravity+charge tweaked to ensure good 'grouped' view (e.g. green group not smack between blue&orange, ...
+		.charge(-300)    // ... charge is important to turn single-linked groups to the outside
 		.friction(0.8)   // friction adjusted to get dampened display: less bouncy bouncy ball [Swedish Chef, anyone?]
 		.on("tick", ticked)
 		.start();
@@ -254,11 +288,13 @@ function init() {
 		.enter().append("path")
 		.attr("class", "hull")
 		.attr("d", drawCluster)
-		.style("fill", function(d) { return fill(d.group); })
+		//.style("fill", function(d) { return fill(d.group); })
+        .style("fill",  "transparent")
 		.on("click", function(d) {
 			console.log("hull click", d, arguments, this, expand[d.group]);
 			expand[d.group] = false; 
-			init();
+			init(d3.select('#slider3textmin').html(), d3.select('#slider3textmax').html());
+            console.log(d3.select('#slider3textmin').html(), d3.select('#slider3textmax').html());
 		});
 
 	node = nodeg.selectAll("circle.node").data(net.nodes, nodeid);
@@ -274,7 +310,8 @@ function init() {
 		.on("click", function(d) {
 			console.log("node click", d, arguments, this, expand[d.group]);
 			expand[d.group] = !expand[d.group];
-			init();
+			init(d3.select('#slider3textmin').html(), d3.select('#slider3textmax').html());
+            console.log(d3.select('#slider3textmin').html(), d3.select('#slider3textmax').html());
 		});
 		
 	link = linkg.selectAll("line.link").data(net.links, linkid);
@@ -316,94 +353,21 @@ function init() {
 
 // -------------------------------------------------------------------------------------
 //slider code
-var margin = {
-    top: 25,
-    right: 30,
-    bottom: 25,
-    left: 30
-};
-var widthSlidr = 900;
-var heightSlidr = 50;
-formatDate = d3.time.format("%b %d");
-// initial value
-var startValue = new Date('2012-01-02');
-var endValue = new Date('2013-01-01');
-// scale function
-var timeScale = d3.time.scale()
-	.domain([startValue, endValue])
-	.range([0, widthSlidr])
-	.clamp(true);
 
-// defines brush
-var brush = d3.svg.brush()
-	.x(timeScale)
-	.extent([startValue, startValue])
-	.on("brush", slideEvent);
 
-var sliderContainer = d3.select("#slider").append("svg")
-	.attr("width", widthSlidr + margin.left + margin.right)
-	.attr("height", heightSlidr + margin.top + margin.bottom)
-	.append("g")
-	// classic transform to position g
-	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+   
 
-sliderContainer.append("g")
-	.attr("class", "x axis")
-	// put in middle of screen
-	.attr("transform", "translate(0," + heightSlidr / 2 + ")")
-	// inroduce axis
-	.call(d3.svg.axis()
-	.scale(timeScale)
-	.orient("bottom")
-	.tickFormat(function(d) {
-		return formatDate(d);
-	})
-	.tickSize(0)
-	.tickPadding(12)
-	.tickValues([timeScale.domain()[0], timeScale.domain()[1]]))
-	.select(".domain")
-	.select(function() {
-		console.log(this);
-		return this.parentNode.appendChild(this.cloneNode(true));
-	})
-	.attr("class", "halo");
-
-var slider = sliderContainer.append("g")
-	.attr("class", "slider")
-	.call(brush);
-
-slider.selectAll(".extent,.resize")
-	.remove();
-
-slider.select(".background")
-	.attr("height", height);
-
-var handle = slider.append("g")
-	.attr("class", "handle")
-
-handle.append("path")
-	.attr("transform", "translate(0," + heightSlidr / 2 + ")")
-	.attr("d", "M 0 -20 V 20")
-
-handle.append('text')
-	.text(startValue)
-	.attr("transform", "translate(" + (-18) + " ," + (heightSlidr / 2 - 25) + ")");
-
-slider
-	.call(brush.event)
-
-function slideEvent() {
-	var value = brush.extent()[0];
-
-	if (d3.event.sourceEvent) { // not a programmatic event
-		value = timeScale.invert(d3.mouse(this)[0]);
-		brush.extent([value, value]);
-	}
-
-	handle.attr("transform", "translate(" + timeScale(value) + ",0)");
-	handle.select('text').text(formatDate(value));
-}
-
+    
 // ---------------------
 //code for selecting data set from dropdown menu
-//loadData();
+
+d3.select("select").on("change", change)
+function change() {
+    var svg = d3.select("svg");
+    svg.selectAll("*").remove();
+    str = this.options[this.selectedIndex].value;
+    var slider = d3.select('#slider3');
+    slider.selectAll("*").remove();
+    loadData(str);
+
+}
