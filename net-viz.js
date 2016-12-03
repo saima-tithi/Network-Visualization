@@ -2,7 +2,7 @@ var width = 960,     // svg width
 	height = 500,     // svg height
 	radius = 4,      // default node radius
 	offset = 15,    // cluster hull offset
-	padding = 5,
+	padding = 1,
 	border = 1,
 	bordercolor = 'black',
 	expand = {}, // expanded clusters
@@ -11,15 +11,12 @@ var width = 960,     // svg width
     time1 = 1, time2 = 10;
 
 var curve = d3.svg.line()
-	.interpolate("cardinal-closed")
+	.interpolate("basis-closed")
 	.tension(.85);
 
-var fill = d3.scale.category20();
+var fill = d3.scale.category10();
 
 // constants
-
-
-
 
 function noop() { return false; }
 
@@ -33,17 +30,14 @@ function linkid(l) {
 	return u<v ? u+"|"+v : v+"|"+u;
 }
 
+function nodeLegend(n) {
+	if (n.size) {
+		return "Group: " + n.group + ", Size: " + n.active_node + ", Degree: " + n.link_count;
+	}
+	return "Node: " + n.name + ", Group: " + n.group_data.group + ", Degree: " + n.node_link_count;
+}
+
 function getGroup(n) { 
-	/* if (n.group == "DSE")
-		return 1;
-	else if (n.group == "SRH")
-		return 2;
-	else if (n.group == "DMCT")
-		return 3;
-	else if (n.group == "SFLE")
-		return 4;
-	else if (n.group == "DISQ")
-		return 5; */
 	return n.group;
 }
 
@@ -84,11 +78,11 @@ function network(data, prev, expand, time1, time2) {
 			// the node should be directly visible
 			nm[n.name] = nodes.length;
 			nodes.push(n);
-		if (gn[i]) {
-			// place new nodes at cluster location (plus jitter)
-			n.x = gn[i].x + Math.random();
-			n.y = gn[i].y + Math.random();
-		}
+			if (gn[i]) {
+				// place new nodes at cluster location (plus jitter)
+				n.x = gn[i].x + Math.random();
+				n.y = gn[i].y + Math.random();
+			}
 		} else {
 			// the node is part of a collapsed cluster
 			if (l.size == 0) {
@@ -108,22 +102,32 @@ function network(data, prev, expand, time1, time2) {
 	}
 
 	for (i in gm) { gm[i].link_count = 0; }
-
+	for (i in gm) { gm[i].active_node = 0; }
+    nodes.forEach(function(n) {
+		n.node_link_count = 0;
+	}); 
+	for (i in nodes) {
+		for (j in nodes[i].nodes) {
+			nodes[i].nodes[j].node_link_count = 0;
+		}
+	}
 	// determine links
 	for (k=0; k<data.links.length; ++k) {
 		var e = data.links[k];
         if(e.time >= time1 && e.time <= time2){
-		var u = getGroup(e.source);
-		var v = getGroup(e.target);
-		if (u != v) {
-			gm[u].link_count++;
-			gm[v].link_count++;
-		}
-		u = expand[u] ? nm[e.source.name] : nm[u];
-		v = expand[v] ? nm[e.target.name] : nm[v];
-		var i = (u<v ? u+"|"+v : v+"|"+u),
-		l = lm[i] || (lm[i] = {source:u, target:v, size:0});
-		l.size += 1;
+			e.source.node_link_count++;
+			e.target.node_link_count++;
+			var u = getGroup(e.source);
+			var v = getGroup(e.target);
+			if (u != v) {
+				gm[u].link_count++;
+				gm[v].link_count++;
+			}
+			u = expand[u] ? nm[e.source.name] : nm[u];
+			v = expand[v] ? nm[e.target.name] : nm[v];
+			var i = (u<v ? u+"|"+v : v+"|"+u),
+			l = lm[i] || (lm[i] = {source:u, target:v, size:0});
+			l.size += 1;
         }
 	}
 	
@@ -191,32 +195,31 @@ function loadData(fileName) {
         
 		for (var i=0; i<data.links.length; ++i) {
 			if(parseInt(data.links[i].time) >= maxtime) {
-            maxtime = data.links[i].time; 
+				maxtime = data.links[i].time; 
             }else{
-            console.log(data.links[i].time, maxtime)
+				//console.log(data.links[i].time, maxtime)
             }
             
-                o = data.links[i];
-            
-                var sourceNode, targetNode;
-                for (var k = 0; k < data.nodes.length; ++k) {
-                    var node = data.nodes[k];
-                    if (o.source === node.name) {
-                        sourceNode = node;
-                        continue;
-                    }   
-                    if (o.target === node.name) {
-                        targetNode = node;
-                        continue;
-                    }
-                }
-                o.source = sourceNode;
-                o.target = targetNode;
+			o = data.links[i];
+		
+			var sourceNode, targetNode;
+			for (var k = 0; k < data.nodes.length; ++k) {
+				var node = data.nodes[k];
+				if (o.source === node.name) {
+					sourceNode = node;
+					continue;
+				}   
+				if (o.target === node.name) {
+					targetNode = node;
+					continue;
+				}
+			}
+			o.source = sourceNode;
+			o.target = targetNode;
                 
-            //}
 		}
         
-        console.log(data.links)
+        //console.log(data.links)
 		hullg = forceGraph.append("g");
 		linkg = forceGraph.append("g");
 		nodeg = forceGraph.append("g");
@@ -225,14 +228,14 @@ function loadData(fileName) {
             d3.select('#slider3textmin').text(value[ 0 ]);
             d3.select('#slider3textmax').text(value[ 1 ]);
             init(value[ 0 ] ,value[ 1 ]);
-            console.log(value[0], value[1])
+            //console.log(value[0], value[1])
             
-    }));
+		}));
         d3.select('#slider3textmin').node().innerHTML =  1;
         d3.select('#slider3textmax').node().innerHTML =  maxtime;
      
 		init(1, maxtime);
-        console.log(maxtime)
+        //console.log(maxtime)
 		forceGraph.attr("opacity", 1e-6)
 			.transition()
 			.duration(1000)
@@ -243,11 +246,26 @@ function loadData(fileName) {
 loadData('data/workplace_small.json');
 
 function init(time1, time2) {
-
     
 	if (force) force.stop();
     
-	net = network(data, net, expand,parseInt(time1), parseInt(time2));
+	net = network(data, net, expand, parseInt(time1), parseInt(time2));
+	for (var i = 0; i < net.nodes.length; i++) {
+		var dup = net.nodes[i];
+		if(dup.size) {
+			//console.log("", dup.size);
+			var uniq = dup.nodes.reduce(function(a,b){
+				if (a.indexOf(b) < 0 ) a.push(b);
+				return a;
+			},[]);
+			for (k in uniq) {
+				//console.log("links", uniq[k].node_link_count);
+				if(uniq[k].node_link_count > 0) {
+					dup.active_node++;
+				}
+			}
+		}
+	}
 
 	force = d3.layout.force()
 		.nodes(net.nodes)
@@ -291,27 +309,43 @@ function init(time1, time2) {
 		//.style("fill", function(d) { return fill(d.group); })
         .style("fill",  "transparent")
 		.on("click", function(d) {
-			console.log("hull click", d, arguments, this, expand[d.group]);
+			//console.log("hull click", d, arguments, this, expand[d.group]);
 			expand[d.group] = false; 
 			init(d3.select('#slider3textmin').html(), d3.select('#slider3textmax').html());
-            console.log(d3.select('#slider3textmin').html(), d3.select('#slider3textmax').html());
+            //console.log(d3.select('#slider3textmin').html(), d3.select('#slider3textmax').html());
 		});
 
+	nodeg.selectAll("*").remove();
 	node = nodeg.selectAll("circle.node").data(net.nodes, nodeid);
 	node.exit().remove();
 	node.enter().append("circle")
 		// if (d.size) -- d.size > 0 when d is a group node.
 		.attr("class", function(d) { return "node" + (d.size?"":" leaf"); })
-		.attr("r", function(d) { return d.size ? d.size + radius : radius+1; })
+		.attr("r", function(d) { return d.size ? d.active_node + radius: radius+1; })
 		.attr("cx", function(d) { return d.x; })
 		.attr("cy", function(d) { return d.y; })
-		.style("fill", function(d) { return fill(d.group); })
-		.style("stroke", function(d) { return d3.rgb(fill(d.group)).darker(); })
+		.style("fill", function(d) { 
+			return fill(d.group); 
+		})
+		.style("stroke", function(d) { 
+			return d3.rgb(fill(d.group)).darker();
+		})
+		.style("opacity", function(d) {
+			if (d.size) {
+				return 1;
+			}
+			else if (d.node_link_count == 0) {
+				return 0.5;
+			}
+			else
+				return 1;
+		})
 		.on("click", function(d) {
-			console.log("node click", d, arguments, this, expand[d.group]);
+			console.log("node click", d);
+			//console.log("node click", d, arguments, this, expand[d.group]);
 			expand[d.group] = !expand[d.group];
 			init(d3.select('#slider3textmin').html(), d3.select('#slider3textmax').html());
-            console.log(d3.select('#slider3textmin').html(), d3.select('#slider3textmax').html());
+            //console.log(d3.select('#slider3textmin').html(), d3.select('#slider3textmax').html());
 		});
 		
 	link = linkg.selectAll("line.link").data(net.links, linkid);
@@ -326,7 +360,7 @@ function init(time1, time2) {
 		//.style("stroke-width", function(d) { return 1; });
 
 	node.append("title")
-		.text(function(d) { return nodeid(d) });
+		.text(function(d) { return nodeLegend(d)});
 	
 	node.call(force.drag);
 
@@ -340,9 +374,35 @@ function init(time1, time2) {
 			.attr("y1", function(d) { return d.source.y; })
 			.attr("x2", function(d) { return d.target.x; })
 			.attr("y2", function(d) { return d.target.y; });
-		//console.log("in tick", link);
 		node.attr("cx", function(d) { return d.x = Math.max(radius, Math.min(width - radius, d.x)); })
 			.attr("cy", function(d) { return d.y = Math.max(radius, Math.min(height - radius, d.y)); });
+		//node.each(collide(0.5)); //For no collision
+	}
+	
+	function collide(alpha) {
+		var quadtree = d3.geom.quadtree(net.nodes);
+		 return function(d) {
+			var rb = 2*radius + padding,
+			nx1 = d.x - rb,
+			nx2 = d.x + rb,
+			ny1 = d.y - rb,
+			ny2 = d.y + rb;
+			quadtree.visit(function(quad, x1, y1, x2, y2) {
+			  if (quad.point && (quad.point !== d)) {
+				var x = d.x - quad.point.x,
+					y = d.y - quad.point.y,
+					l = Math.sqrt(x * x + y * y);
+					  if (l < rb) {
+					  l = (l - rb) / l * alpha;
+					  d.x -= x *= l;
+					  d.y -= y *= l;
+					  quad.point.x += x;
+					  quad.point.y += y;
+					}
+				}
+				return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
+			});
+		};
 	}
 	
 	//code for static graph, not working
@@ -350,13 +410,6 @@ function init(time1, time2) {
 	for (var i = 0; i < n*n; ++i) force.tick();
 	force.stop();  */
 }
-
-// -------------------------------------------------------------------------------------
-//slider code
-
-
-   
-
     
 // ---------------------
 //code for selecting data set from dropdown menu
