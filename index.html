@@ -6,33 +6,52 @@
 	<link rel="stylesheet" href="net-viz.css"/>
 	<link rel="stylesheet" href="d3.slider.css" /> 
     
-      <style>
+	<style>
 
-    body {
-      font-family: Verdana,Arial,sans-serif;
-    }
+		body {
+			font-family: Verdana,Arial,sans-serif;
+		}
+		h1 {
+			margin-left: 20px;
+		}
+		h4 {
+			margin-left: 20px;
+		}
+		h2 {
+			font-size: 1.2em;
+			margin: 25px 0 5px 0;
+		}
 
-    h2 {
-      font-size: 1.2em;
-      margin: 60px 0 5px 0;
-    }
+		.wrapper {
+			width: 800px;
+			float: left;
+			margin-left: 40px;
+		}
 
-    .wrapper {
-      width: 800px;
-      margin-left: auto;
-      margin-right: auto;
-      
-    }
+		.wrapper > div {
+			margin: 35px 0;
+		}
+		.graph-svg-component {
+			background-color: #0E2C36;
+			margin-left: 20px;
+		}
+		.box {
+			display: inline-block;
+			height: 20px;
+			width: 20px;
+			border: 2px solid;
+			margin-left: 25px;
+			margin-top: 10px;
+			margin-right: 5px;
+		}
+		.groupLabel {
+			line-height: 15px;
+		}
+		.boxContainer {
 
-    .wrapper > div {
-      margin: 35px 0;
-    }
-    .graph-svg-component {
-    background-color: Black;
-}
+		}
 
-
-  </style>
+	</style>
 </head>
 
 <body>
@@ -42,10 +61,14 @@
 	<div id=wrapper>
 		<div id="force-layout-graph"></div>
 		<div id="dropdown">
+			<h4>Select data set:</h4>
 			<select id="dataset">
 				<option value="data/workplace_small.json" selected="selected" >Data set 1</option>
 				<option value="data/school.json" >Data set 2</option>
 			</select>
+			<h4>Group labels:</h4>
+			<div id="group_container" >
+			</div>
 		</div>
 	</div>
    

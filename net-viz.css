@@ -12,7 +12,7 @@
 	float:left;
 	width: 300px;
 	height: 500px;
-	background-color: #cfd9e6;
+	background-color: #8FAACF;
 }
 input[type=text], select {
     width: 98%;
@@ -39,29 +39,4 @@ line.link {
   stroke: #333;
   stroke-opacity: 0.5;
   pointer-events: none;
-}
-.axis {
-  fill: #4B5C75;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  user-select: none;
-}
-
-.axis .halo {
-  stroke: #4B5C75;
-  stroke-width: 4px;
-  stroke-linecap: round;
-}
-
-.slider .handle path {
-  stroke: black;
-  stroke-width: 3px;
-  stroke-linecap: round;
-  pointer-events: none;
-}
-
-.slider .handle text {
-  fill: black;
-  text-align: center;
-  font-size: 18px;
 }

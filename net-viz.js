@@ -203,7 +203,24 @@ function loadData(fileName) {
 	//var dataset = e.options[e.selectedIndex].value;
 	//var dataFile = 'data/' + dataset + '.json';
 	//console.log("in loadData", dataFile);
-    maxtime = 0
+    maxtime = 0;
+	fill = d3.scale.category10();
+	var groupList1 = ["DSE", "SRH", "DMCT", "SFLE", "DISQ"];
+	var groupList2 = ["MP*2", "PSI*", "PC*", "PC", "MP*1"];
+	var colorList = {};
+	if (fileName == "data/workplace_small.json") {
+		for (i in groupList1) {
+			colorList['Group: ' + groupList1[i]] = fill(i);
+		}
+	}
+	else if (fileName == "data/school.json") {
+		for (i in groupList2) {
+			colorList['Group: ' + groupList2[i]] = fill(i);
+		}
+	}
+	
+	colorize(colorList);
+	
 	d3.json(fileName, function(error, json) {
 		if (error) throw error;
 		data = json;
@@ -261,13 +278,14 @@ function loadData(fileName) {
 loadData('data/workplace_small.json');
 
 function init(time1, time2) {
-    
+	
 	if (force) force.stop();
     lastexpand = expand;
     tempexpand = { DMCT: true, SRH: true, DSE: true, DISQ: true, SFLE: true };
 	net = network(data, net, tempexpand, parseInt(time1), parseInt(time2));
     net = network(data, net, lastexpand, parseInt(time1), parseInt(time2));
     expand = lastexpand;
+	
 	for (var i = 0; i < net.nodes.length; i++) {
 		var dup = net.nodes[i];
 		if(dup.size) {
@@ -284,6 +302,8 @@ function init(time1, time2) {
 			}
 		}
 	}
+	
+	fill = d3.scale.category10();
     //console.log(net.nodes)
 	force = d3.layout.force()
 		.nodes(net.nodes)
@@ -424,6 +444,30 @@ function change() {
     str = this.options[this.selectedIndex].value;
     var slider = d3.select('#slider3');
     slider.selectAll("*").remove();
+	var container = d3.select('#group_container');
+    container.selectAll("*").remove();
     loadData(str);
 
+}
+
+function colorize(colorList) {
+	var container = document.getElementById('group_container');
+  
+    for (var key in colorList) {
+        var boxContainer = document.createElement("DIV");
+        var box = document.createElement("DIV");
+        var label = document.createElement("SPAN");
+
+        label.innerHTML = key;
+		boxContainer.classname = "boxContainer";
+        box.className = "box";
+		label.className = "groupLabel";
+        box.style.backgroundColor = colorList[key];
+
+        boxContainer.appendChild(box);
+        boxContainer.appendChild(label);
+
+        container.appendChild(boxContainer);
+
+   }
 }
