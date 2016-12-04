@@ -9,6 +9,19 @@ var width = 960,     // svg width
 	n = 100,	// number of times force runs, then it stops to get static layout
 	data, net, force, hullg, hull, linkg, link, nodeg, node;
     time1 = 1, time2 = 10;
+    
+var tooltip = d3.select("body")
+    .append("div")
+    .style("height", "70px")
+    .style("width", "150px")
+    .style("border-radius", "5px")
+    .style("border", " 2px solid #73AD21")
+    .style("background", "#73AD21")
+    .style("position", "absolute")
+    .style("z-index", "10")
+    .style("visibility", "hidden")
+    .html("a simple tooltip");
+    
 
 var curve = d3.svg.line()
 	.interpolate("basis-closed")
@@ -32,9 +45,9 @@ function linkid(l) {
 
 function nodeLegend(n) {
 	if (n.size) {
-		return "Group: " + n.group + ", Size: " + n.active_node + ", Degree: " + n.link_count;
+		return "Group: " + n.group + "</br> Size: " + n.active_node + "</br> Degree: " + n.link_count;
 	}
-	return "Node: " + n.name + ", Group: " + n.group_data.group + ", Degree: " + n.node_link_count;
+	return "Node: " + n.name + "</br> Group: " + n.group_data.group + "</br> Degree: " + n.node_link_count;
 }
 
 function getGroup(n) { 
@@ -172,7 +185,9 @@ function drawCluster(d) {
 var forceGraph = d3.select("#force-layout-graph").append("svg")
 	.attr("width", width)
 	.attr("height", height)
-	.attr("border",border);
+	.attr("border",border)
+    .attr("class", "graph-svg-component");
+ 
 
 var borderPath = forceGraph.append("rect")
 	.attr("x", 0)
@@ -248,8 +263,11 @@ loadData('data/workplace_small.json');
 function init(time1, time2) {
     
 	if (force) force.stop();
-    
-	net = network(data, net, expand, parseInt(time1), parseInt(time2));
+    lastexpand = expand;
+    tempexpand = { DMCT: true, SRH: true, DSE: true, DISQ: true, SFLE: true };
+	net = network(data, net, tempexpand, parseInt(time1), parseInt(time2));
+    net = network(data, net, lastexpand, parseInt(time1), parseInt(time2));
+    expand = lastexpand;
 	for (var i = 0; i < net.nodes.length; i++) {
 		var dup = net.nodes[i];
 		if(dup.size) {
@@ -266,7 +284,7 @@ function init(time1, time2) {
 			}
 		}
 	}
-
+    //console.log(net.nodes)
 	force = d3.layout.force()
 		.nodes(net.nodes)
 		.links(net.links)
@@ -288,14 +306,14 @@ function init(time1, time2) {
 					-30 +
 					30 * Math.min((n1.link_count || (n1.group != n2.group ? n1.group_data.link_count : 0)),
 					(n2.link_count || (n1.group != n2.group ? n2.group_data.link_count : 0))),
-					100);
+					200);
 			//return 150;
 		})
 		.linkStrength(function(l, i) {
 			return 1;
 		})
-		.gravity(1.0)   // gravity+charge tweaked to ensure good 'grouped' view (e.g. green group not smack between blue&orange, ...
-		.charge(-300)    // ... charge is important to turn single-linked groups to the outside
+		.gravity(0.5)   // gravity+charge tweaked to ensure good 'grouped' view (e.g. green group not smack between blue&orange, ...
+		.charge(-400)    // ... charge is important to turn single-linked groups to the outside
 		.friction(0.8)   // friction adjusted to get dampened display: less bouncy bouncy ball [Swedish Chef, anyone?]
 		.on("tick", ticked)
 		.start();
@@ -335,18 +353,22 @@ function init(time1, time2) {
 				return 1;
 			}
 			else if (d.node_link_count == 0) {
-				return 0.5;
+				return 0.2;
 			}
 			else
 				return 1;
 		})
 		.on("click", function(d) {
-			console.log("node click", d);
+			//console.log("node click", d);
 			//console.log("node click", d, arguments, this, expand[d.group]);
+            tooltip.style("visibility", "hidden")
 			expand[d.group] = !expand[d.group];
 			init(d3.select('#slider3textmin').html(), d3.select('#slider3textmax').html());
             //console.log(d3.select('#slider3textmin').html(), d3.select('#slider3textmax').html());
-		});
+		})
+        .on("mouseover", function(d){return tooltip.style("visibility", "visible").html( nodeLegend(d));})
+        .on("mousemove", function(){return tooltip.style("top",(d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");})
+        .on("mouseout", function(){return tooltip.style("visibility", "hidden");});
 		
 	link = linkg.selectAll("line.link").data(net.links, linkid);
 	link.exit().remove();
@@ -356,11 +378,13 @@ function init(time1, time2) {
 		.attr("y1", function(d) { return d.source.y; })
 		.attr("x2", function(d) { return d.target.x; })
 		.attr("y2", function(d) { return d.target.y; })
-		.style("stroke-width", function(d) { return d.size * 0.25 || 1; });
-		//.style("stroke-width", function(d) { return 1; });
+		.style("stroke-width", function(d) { return d.size * 0.25 || 1; })
+		.style("stroke","white");
+    console.log(link)
+    console.log(net.links)
 
-	node.append("title")
-		.text(function(d) { return nodeLegend(d)});
+	//node.append("title")
+	//	.text(function(d) { return nodeLegend(d)});
 	
 	node.call(force.drag);
 
@@ -373,37 +397,16 @@ function init(time1, time2) {
 		link.attr("x1", function(d) { return d.source.x; })
 			.attr("y1", function(d) { return d.source.y; })
 			.attr("x2", function(d) { return d.target.x; })
-			.attr("y2", function(d) { return d.target.y; });
+			.attr("y2", function(d) { return d.target.y; })
+            .style("stroke-width", function(d) { return d.size * 0.25 || 1; });
 		node.attr("cx", function(d) { return d.x = Math.max(radius, Math.min(width - radius, d.x)); })
 			.attr("cy", function(d) { return d.y = Math.max(radius, Math.min(height - radius, d.y)); });
-		//node.each(collide(0.5)); //For no collision
+		
+        
 	}
 	
-	function collide(alpha) {
-		var quadtree = d3.geom.quadtree(net.nodes);
-		 return function(d) {
-			var rb = 2*radius + padding,
-			nx1 = d.x - rb,
-			nx2 = d.x + rb,
-			ny1 = d.y - rb,
-			ny2 = d.y + rb;
-			quadtree.visit(function(quad, x1, y1, x2, y2) {
-			  if (quad.point && (quad.point !== d)) {
-				var x = d.x - quad.point.x,
-					y = d.y - quad.point.y,
-					l = Math.sqrt(x * x + y * y);
-					  if (l < rb) {
-					  l = (l - rb) / l * alpha;
-					  d.x -= x *= l;
-					  d.y -= y *= l;
-					  quad.point.x += x;
-					  quad.point.y += y;
-					}
-				}
-				return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
-			});
-		};
-	}
+	
+
 	
 	//code for static graph, not working
 	/* force.start();
