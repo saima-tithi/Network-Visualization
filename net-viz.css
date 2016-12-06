@@ -1,11 +1,53 @@
+body {
+	font-family: Verdana,Arial,sans-serif;
+}
+h1 {
+	margin-left: 20px;
+	color: #393939;
+}
+h4 {
+	margin-left: 20px;
+	color: #393939;
+}
+h2 {
+	font-size: 1.2em;
+	margin: 25px 0 5px 0;
+	color: #393939;
+}
+
+.wrapper {
+	width: 800px;
+	float: left;
+	margin-left: 40px;
+}
+
+.wrapper > div {
+	margin: 35px 0;
+}
+.graph-svg-component {
+	background-color: #0E2C36;
+	margin-left: 20px;
+}
+.box {
+	display: inline-flex;
+	height: 20px;
+	width: 20px;
+	border: 2px solid;
+	border-radius: 4px;
+	margin-left: 25px;
+	margin-top: 10px;
+	margin-right: 5px;
+}
+.groupLabel {
+	display: inline-flex;
+	line-height: 15px;
+}
+.boxContainer {
+	display: inline-flex;
+}
 #force-layout-graph {
 	display: inline-block;
 	float:left;
-}
-.wrapper {
-	width: 800px;
-	margin-left: auto;
-	margin-right: auto;
 }
 #dropdown {
 	display: inline-block;
@@ -38,5 +80,4 @@ path.hull {
 line.link {
   stroke: #333;
   stroke-opacity: 0.5;
-  pointer-events: none;
 }

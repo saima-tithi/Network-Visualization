@@ -15,13 +15,24 @@ var tooltip = d3.select("body")
     .style("height", "70px")
     .style("width", "150px")
     .style("border-radius", "5px")
-    .style("border", " 2px solid #73AD21")
-    .style("background", "#73AD21")
+    .style("border", "2px solid #17becf")
+    .style("background", "#17becf")
     .style("position", "absolute")
     .style("z-index", "10")
     .style("visibility", "hidden")
     .html("a simple tooltip");
     
+var tooltipLink = d3.select("body")
+    .append("div")
+    .style("height", "20px")
+    .style("width", "130px")
+    .style("border-radius", "5px")
+    .style("border", "2px solid #89C928")
+    .style("background", "#89C928")
+    .style("position", "absolute")
+    .style("z-index", "10")
+    .style("visibility", "hidden")
+    .html("a simple tooltip for link");
 
 var curve = d3.svg.line()
 	.interpolate("basis-closed")
@@ -257,10 +268,10 @@ function loadData(fileName) {
 		nodeg = forceGraph.append("g");
         
         d3.select('#slider3').call(d3.slider().axis(true).min(1).max(maxtime).value( [ 1, maxtime ] ).on("slide", function(evt, value) {
-            d3.select('#slider3textmin').text(value[ 0 ]);
-            d3.select('#slider3textmax').text(value[ 1 ]);
-            init(value[ 0 ] ,value[ 1 ]);
-            //console.log(value[0], value[1])
+            d3.select('#slider3textmin').text(parseInt(value[0]));
+            d3.select('#slider3textmax').text(parseInt(value[1]));
+            init(value[0] ,value[1]);
+            //console.log(value[0], value[1]);
             
 		}));
         d3.select('#slider3textmin').node().innerHTML =  1;
@@ -359,7 +370,7 @@ function init(time1, time2) {
 	node.enter().append("circle")
 		// if (d.size) -- d.size > 0 when d is a group node.
 		.attr("class", function(d) { return "node" + (d.size?"":" leaf"); })
-		.attr("r", function(d) { return d.size ? d.active_node + radius: radius+1; })
+		.attr("r", function(d) { return d.size ? d.active_node + radius: radius+2; })
 		.attr("cx", function(d) { return d.x; })
 		.attr("cy", function(d) { return d.y; })
 		.style("fill", function(d) { 
@@ -373,13 +384,13 @@ function init(time1, time2) {
 				return 1;
 			}
 			else if (d.node_link_count == 0) {
-				return 0.2;
+				return 0.5;
 			}
 			else
 				return 1;
 		})
 		.on("click", function(d) {
-			//console.log("node click", d);
+			console.log("node click", d);
 			//console.log("node click", d, arguments, this, expand[d.group]);
             tooltip.style("visibility", "hidden")
 			expand[d.group] = !expand[d.group];
@@ -389,7 +400,8 @@ function init(time1, time2) {
         .on("mouseover", function(d){return tooltip.style("visibility", "visible").html( nodeLegend(d));})
         .on("mousemove", function(){return tooltip.style("top",(d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");})
         .on("mouseout", function(){return tooltip.style("visibility", "hidden");});
-		
+	
+	linkg.selectAll("*").remove();	
 	link = linkg.selectAll("line.link").data(net.links, linkid);
 	link.exit().remove();
 	link.enter().append("line")
@@ -400,9 +412,13 @@ function init(time1, time2) {
 		.attr("y2", function(d) { return d.target.y; })
 		.style("stroke-width", function(d) { return d.size * 0.25 || 1; })
 		.style("stroke","white");
-    console.log(link)
-    console.log(net.links)
-
+		
+	link.on("mouseover", function(d){return tooltipLink.style("visibility", "visible").html( "# of links:" + d.size);});
+	link.on("mousemove", function(){return tooltipLink.style("top",(d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");})
+	link.on("mouseout", function(){return tooltipLink.style("visibility", "hidden");});
+    //console.log(link)
+    //console.log(net.links)
+	
 	//node.append("title")
 	//	.text(function(d) { return nodeLegend(d)});
 	
@@ -424,9 +440,6 @@ function init(time1, time2) {
 		
         
 	}
-	
-	
-
 	
 	//code for static graph, not working
 	/* force.start();
@@ -456,13 +469,14 @@ function colorize(colorList) {
     for (var key in colorList) {
         var boxContainer = document.createElement("DIV");
         var box = document.createElement("DIV");
-        var label = document.createElement("SPAN");
+        var label = document.createElement("DIV");
 
         label.innerHTML = key;
 		boxContainer.classname = "boxContainer";
         box.className = "box";
 		label.className = "groupLabel";
         box.style.backgroundColor = colorList[key];
+		box.style.border = "2px solid " + d3.rgb(colorList[key]).darker();
 
         boxContainer.appendChild(box);
         boxContainer.appendChild(label);
